@@ -1,0 +1,21 @@
+.venv/
+.pytest_cache/
+.ruff_cache/
+.tmp/
+__pycache__/
+*.py[cod]
+build/
+dist/
+*.egg-info/
+
+# Generated local pipeline outputs
+data/output/
+reports/generated/
+
+# Databricks local state
+.databricks/
+databricks.yml.local
+
+# Local secrets
+.env
+*.local.env

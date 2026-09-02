@@ -1,0 +1,53 @@
+resources:
+  jobs:
+    telco_customer_analytics:
+      name: telco-customer-analytics
+      max_concurrent_runs: 1
+      queue:
+        enabled: true
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+        - name: source_path
+          default: ${var.source_path}
+        - name: snapshot_date
+          default: "{{job.start_time.iso_date}}"
+        - name: minimum_quality_rate
+          default: ${var.minimum_quality_rate}
+        - name: ai_endpoint
+          default: ${var.ai_endpoint}
+      tasks:
+        - task_key: bronze_ingestion
+          notebook_task:
+            notebook_path: ../notebooks/01_bronze_ingestion.py
+          max_retries: 2
+          min_retry_interval_millis: 30000
+
+        - task_key: silver_quality_and_customer_model
+          depends_on:
+            - task_key: bronze_ingestion
+          notebook_task:
+            notebook_path: ../notebooks/02_silver_customer_model.py
+          max_retries: 1
+          min_retry_interval_millis: 30000
+
+        - task_key: gold_retention_metrics
+          depends_on:
+            - task_key: silver_quality_and_customer_model
+          notebook_task:
+            notebook_path: ../notebooks/03_gold_retention_metrics.py
+          max_retries: 1
+
+        - task_key: stakeholder_report
+          depends_on:
+            - task_key: gold_retention_metrics
+          notebook_task:
+            notebook_path: ../notebooks/04_stakeholder_report.py
+          max_retries: 1
+
+      schedule:
+        quartz_cron_expression: "0 0 7 ? * MON"
+        timezone_id: Australia/Sydney
+        pause_status: PAUSED

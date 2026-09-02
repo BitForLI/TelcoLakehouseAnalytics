@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install project
+        run: python -m pip install --upgrade pip && python -m pip install -e ".[dev]"
+
+      - name: Lint
+        run: ruff check src tests scripts notebooks
+
+      - name: Test
+        run: pytest
+
+      - name: Compile Databricks notebooks
+        run: python -m compileall -q notebooks
+
+      - name: Run analytics pipeline
+        run: >-
+          telco-analytics
+          --input data/raw/telco_customer_churn.csv
+          --output data/output
+          --snapshot-date 2026-01-01
+          --minimum-quality-rate 0.99
+
+      - name: Validate generated manifest
+        run: python scripts/check_outputs.py data/output/run_manifest.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: analytics-report
+          path: |
+            data/output/gold_kpis.json
+            data/output/gold_segment_metrics.csv
+            data/output/stakeholder_summary.md
+            data/output/run_manifest.json

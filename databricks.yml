@@ -1,0 +1,31 @@
+bundle:
+  name: telco_lakehouse_analytics
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    description: Unity Catalog catalog for analytics tables
+    default: main
+  schema:
+    description: Unity Catalog schema for this project
+    default: telco_lakehouse_analytics
+  source_path:
+    description: CSV file or directory in a Unity Catalog Volume
+    default: /Volumes/main/telco_lakehouse_analytics/landing
+  minimum_quality_rate:
+    description: Minimum accepted share of source rows
+    default: "0.99"
+  ai_endpoint:
+    description: Optional Databricks model endpoint for a grounded executive summary
+    default: ""
+
+targets:
+  dev:
+    mode: development
+    default: true
+  prod:
+    mode: production
+    workspace:
+      root_path: /Workspace/Production/.bundle/${bundle.name}
